@@ -57,7 +57,9 @@ tasks {
         from("LICENSE")
     }
 }
-
+sourceSets {
+    main.kotlin.srcDirs += 'src/main/kotlin'
+}
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)

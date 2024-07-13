@@ -7,17 +7,14 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.resources.ResourceLocation
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
-import net.minecraft.network.FriendlyByteBuf
 
 class VisualEffectsServerMod : DedicatedServerModInitializer {
-
-    private val LODESTONE_HEALTH_UPDATE_PACKET = ResourceLocation("lodestone", "custom_health_update")
-    private val lastHealthMap = mutableMapOf<String, Float>()
-    //testing
     override fun onInitializeServer() {
         println("Initializing Visual Effects Server Mod")
         registerEvents()
-    }
+
+    private val LODESTONE_HEALTH_UPDATE_PACKET = ResourceLocation("lodestone", "custom_health_update")
+    private val lastHealthMap = mutableMapOf<String, Float>()
 
     private fun registerEvents() {
         ServerTickEvents.END_SERVER_TICK.register { server ->
