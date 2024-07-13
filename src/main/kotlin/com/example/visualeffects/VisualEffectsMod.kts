@@ -20,12 +20,10 @@ class VisualEffectsMod : ModInitializer, ClientModInitializer, DedicatedServerMo
     override fun onInitialize() {
         println("Initializing Visual Effects Mod")
     }
-
     override fun onInitializeClient() {
         println("Initializing Visual Effects Client")
         registerClientPacketReceiver()
     }
-
     override fun onInitializeServer() {
         println("Initializing Visual Effects Server")
         registerServerEvents()
@@ -79,7 +77,8 @@ class VisualEffectsMod : ModInitializer, ClientModInitializer, DedicatedServerMo
     private fun updatePlayerHealthDisplay(playerUuid: UUID, health: Float, maxHealth: Float, lastHealth: Float) {
         // Implement your client-side rendering logic here
         // For example, you could create a custom renderer for health bars above players' heads
-        println("Updating health display for player $playerUuid: $health / $maxHealth")
+        val healthChange = health - lastHealth
+        println("Updating health display for player $playerUuid: $health / $maxHealth (change: $healthChange)")
     }
 
     companion object {
