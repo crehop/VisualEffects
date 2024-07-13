@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "visualeffects",
+  "version": "${version}",
+  "name": "Visual Effects Server Mod",
+  "description": "Server-side mod for visual health effects using Lodestone",
+  "authors": [
+    "Your Name"
+  ],
+  "contact": {
+    "homepage": "https://your-website.com/",
+    "sources": "https://github.com/yourusername/visualeffects"
+  },
+  "license": "MIT",
+  "environment": "server",
+  "entrypoints": {
+    "server": [
+      {
+        "adapter": "kotlin",
+        "value": "com.example.visualeffects.VisualEffectsMod"
+      }
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+
+    "fabric": ">=0.92.2+1.20.1",
+    "minecraft": "~1.20.1",
+    "java": ">=17",
+    "fabric-language-kotlin": ">=1.10.8+kotlin.1.9.0"
+  },
+  "suggests": {
+    "lodestone": "*"
+  }
+}
