@@ -13,7 +13,7 @@ class VisualEffectsServerMod : DedicatedServerModInitializer {
 
     private val LODESTONE_HEALTH_UPDATE_PACKET = ResourceLocation("lodestone", "custom_health_update")
     private val lastHealthMap = mutableMapOf<String, Float>()
-
+    //testing
     override fun onInitializeServer() {
         println("Initializing Visual Effects Server Mod")
         registerEvents()
