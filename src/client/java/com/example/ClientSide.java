@@ -12,7 +12,7 @@ public class ClientSide {
     }
 
     private static void registerClientPacketReceiver() {
-        ClientPlayNetworking.registerGlobalReceiver(ExampleMod.HEALTH_UPDATE_PACKET, (client, handler, buf, responseSender) -> {
+        ClientPlayNetworking.registerGlobalReceiver(Main.HEALTH_UPDATE_PACKET, (client, handler, buf, responseSender) -> {
             UUID playerUuid = buf.readUuid();
             float health = buf.readFloat();
             float maxHealth = buf.readFloat();
