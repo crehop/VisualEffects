@@ -11,15 +11,15 @@ import org.joml.Matrix4f;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.player.PlayerEntity;
 import java.util.Random;
 
 @Environment(EnvType.CLIENT)
 public class SnowRenderer {
-    private static final Identifier SNOW_TEXTURE = new Identifier("visualeffects", "textures/environment/snow.png");
+    private static final Identifier SNOW_TEXTURE = new Identifier("modid", "textures/enviornment/snow.png");
     private static final Random RANDOM = new Random();
-    private static final int MAX_SNOWFLAKES = 100000;
+    private static final int MAX_SNOWFLAKES = 10000;
     private static Snowflake[] snowflakes;
-    private static boolean textureLoaded = false;
 
     private static class Snowflake {
         double x, y, z;
@@ -71,24 +71,26 @@ public class SnowRenderer {
         }
     }
 
-    public static void render(MatrixStack matrices, float tickDelta, Vec3d cameraPos) {
-        if (!SnowEffect.isActive()) return;
-
-        if (!textureLoaded) {
-            try {
-                MinecraftClient.getInstance().getTextureManager().getTexture(SNOW_TEXTURE);
-                System.out.println("Snow texture loaded successfully");
-                textureLoaded = true;
-            } catch (Exception e) {
-                System.out.println("Failed to load snow texture: " + e.getMessage());
-                return;
-            }
+    public static void render(MatrixStack matrices, float tickDelta) {
+        if (!SnowEffect.isActive()) {
+            System.out.println("Snow effect is not active.");
+            return;
         }
+
+        PlayerEntity player = MinecraftClient.getInstance().player;
+        if (player == null) {
+            System.out.println("Player not found.");
+            return;
+        }
+
+        Vec3d playerPos = player.getPos();
+        System.out.println("Rendering snow effect at player position: " + playerPos);
 
         if (snowflakes == null || snowflakes.length != SnowEffect.getCount()) {
             initializeSnowflakes();
         }
 
+        System.out.println("Setting shader and texture...");
         RenderSystem.setShader(GameRenderer::getPositionTexColorProgram);
         RenderSystem.setShaderTexture(0, SNOW_TEXTURE);
         RenderSystem.enableBlend();
@@ -100,30 +102,31 @@ public class SnowRenderer {
 
         for (Snowflake snowflake : snowflakes) {
             snowflake.update(tickDelta, SnowEffect.getRadius(), SnowEffect.isSphereShape());
-            renderSnowflake(matrices, bufferBuilder, snowflake, cameraPos);
+            renderSnowflake(matrices, bufferBuilder, snowflake, playerPos);
         }
 
-        BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
+        BufferRenderer.draw(bufferBuilder.end());
 
         RenderSystem.depthMask(true);
         RenderSystem.disableBlend();
     }
 
     private static void initializeSnowflakes() {
+        System.out.println("Initializing snowflakes...");
         snowflakes = new Snowflake[SnowEffect.getCount()];
         for (int i = 0; i < snowflakes.length; i++) {
             snowflakes[i] = new Snowflake(SnowEffect.getRadius(), SnowEffect.isSphereShape());
         }
     }
 
-    private static void renderSnowflake(MatrixStack matrices, BufferBuilder bufferBuilder, Snowflake snowflake, Vec3d cameraPos) {
+    private static void renderSnowflake(MatrixStack matrices, BufferBuilder bufferBuilder, Snowflake snowflake, Vec3d playerPos) {
         matrices.push();
-        matrices.translate(snowflake.x - cameraPos.x, snowflake.y - cameraPos.y, snowflake.z - cameraPos.z);
+        matrices.translate(snowflake.x - playerPos.x, snowflake.y - playerPos.y, snowflake.z - playerPos.z);
 
         Matrix4f matrix = matrices.peek().getPositionMatrix();
         float size = (float) snowflake.size / 2;
 
-        int light = getLightLevel(snowflake, cameraPos);
+        int light = getLightLevel(snowflake, playerPos);
         int alpha = SnowEffect.isAffectedByLight() ? light : 255;
 
         bufferBuilder.vertex(matrix, -size, -size, 0).texture(0, 1).color(255, 255, 255, alpha).next();
@@ -134,7 +137,7 @@ public class SnowRenderer {
         matrices.pop();
     }
 
-    private static int getLightLevel(Snowflake snowflake, Vec3d cameraPos) {
+    private static int getLightLevel(Snowflake snowflake, Vec3d playerPos) {
         // This is a placeholder. You'll need to implement actual light level calculation based on the world.
         return 15;
     }

@@ -33,9 +33,9 @@ public class SnowCommand {
                                                                                                 DoubleArgumentType.getDouble(context, "shimmyStrength"),
                                                                                                 BoolArgumentType.getBool(context, "isSphereShape"),
                                                                                                 BoolArgumentType.getBool(context, "affectedByLight")
-                                                                                        )))))))))))
-                .then(literal("toggle")
-                        .executes(context -> executeToggle(context.getSource()))));
+                                                                                        ))))))))))
+                        .then(literal("toggle")
+                                .executes(context -> executeToggle(context.getSource())))));
     }
 
     private static int executeSet(ServerCommandSource source, double minSize, double maxSize, int count, double radius,

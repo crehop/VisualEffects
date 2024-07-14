@@ -22,8 +22,8 @@ public class ClientMain implements ClientModInitializer {
 		WorldRenderEvents.END.register(context -> {
 			MinecraftClient client = MinecraftClient.getInstance();
 			if (client.world != null && client.player != null) {
-				SnowRenderer.render(context.matrixStack(), context.tickDelta(), client.gameRenderer.getCamera().getPos());
-				FogRenderer.render(context.matrixStack(), context.tickDelta(), client.gameRenderer.getCamera().getPos());
+				SnowRenderer.render(context.matrixStack(), context.tickDelta());
+				FogRenderer.render(context.matrixStack(), context.tickDelta());
 
 				// Play sounds
 				SoundManager.playSnowSound(client.player.getPos());
