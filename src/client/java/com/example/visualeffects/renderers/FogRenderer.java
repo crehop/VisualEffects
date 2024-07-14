@@ -13,7 +13,7 @@ import net.minecraft.client.MinecraftClient;
 
 @Environment(EnvType.CLIENT)
 public class FogRenderer {
-    private static final Identifier FOG_TEXTURE = new Identifier("textures/environment/fog.png");
+    private static final Identifier FOG_TEXTURE = new Identifier("modid", "textures/enviornment/fog.png");
 
     public static void render(MatrixStack matrices, float tickDelta, Vec3d cameraPos) {
         if (!FogEffect.isActive()) return;

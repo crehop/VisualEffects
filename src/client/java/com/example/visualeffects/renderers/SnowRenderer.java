@@ -15,7 +15,7 @@ import java.util.Random;
 
 @Environment(EnvType.CLIENT)
 public class SnowRenderer {
-    private static final Identifier SNOW_TEXTURE = new Identifier("textures/environment/snow.png");
+    private static final Identifier SNOW_TEXTURE = new Identifier("modid", "textures/enviornment/snow.png");
     private static final Random RANDOM = new Random();
     private static final int MAX_SNOWFLAKES = 10000;
     private static Snowflake[] snowflakes;
