@@ -15,10 +15,11 @@ import java.util.Random;
 
 @Environment(EnvType.CLIENT)
 public class SnowRenderer {
-    private static final Identifier SNOW_TEXTURE = new Identifier("modid", "textures/enviornment/snow.png");
+    private static final Identifier SNOW_TEXTURE = new Identifier("visualeffects", "textures/environment/snow.png");
     private static final Random RANDOM = new Random();
-    private static final int MAX_SNOWFLAKES = 10000;
+    private static final int MAX_SNOWFLAKES = 100000;
     private static Snowflake[] snowflakes;
+    private static boolean textureLoaded = false;
 
     private static class Snowflake {
         double x, y, z;
@@ -70,17 +71,18 @@ public class SnowRenderer {
         }
     }
 
-    private static boolean debugPrinted = false;
-
     public static void render(MatrixStack matrices, float tickDelta, Vec3d cameraPos) {
         if (!SnowEffect.isActive()) return;
 
-        if (!debugPrinted) {
-            System.out.println("Snow rendering started. Parameters: " +
-                    "Count: " + SnowEffect.getCount() +
-                    ", Radius: " + SnowEffect.getRadius() +
-                    ", Size: " + SnowEffect.getSnowflakeSize());
-            debugPrinted = true;
+        if (!textureLoaded) {
+            try {
+                MinecraftClient.getInstance().getTextureManager().getTexture(SNOW_TEXTURE);
+                System.out.println("Snow texture loaded successfully");
+                textureLoaded = true;
+            } catch (Exception e) {
+                System.out.println("Failed to load snow texture: " + e.getMessage());
+                return;
+            }
         }
 
         if (snowflakes == null || snowflakes.length != SnowEffect.getCount()) {
@@ -101,7 +103,7 @@ public class SnowRenderer {
             renderSnowflake(matrices, bufferBuilder, snowflake, cameraPos);
         }
 
-        BufferRenderer.draw(bufferBuilder.end());
+        BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
 
         RenderSystem.depthMask(true);
         RenderSystem.disableBlend();

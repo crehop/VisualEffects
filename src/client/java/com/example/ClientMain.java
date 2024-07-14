@@ -43,18 +43,13 @@ public class ClientMain implements ClientModInitializer {
 			double maxSize = buf.readDouble();
 			int count = buf.readInt();
 			double radius = buf.readDouble();
-			int spinSpeed = buf.readInt();
 			double fallSpeed = buf.readDouble();
-			double angleVariance = buf.readDouble();
 			double shimmyStrength = buf.readDouble();
 			boolean isSphereShape = buf.readBoolean();
-			double renderDistance = buf.readDouble();
 			boolean affectedByLight = buf.readBoolean();
-			boolean particleEffects = buf.readBoolean();
 
 			client.execute(() -> {
-				SnowEffect.setParameters(minSize, maxSize, count, radius, spinSpeed, fallSpeed, angleVariance,
-						shimmyStrength, isSphereShape, renderDistance, affectedByLight, particleEffects);
+				SnowEffect.setParameters(minSize, maxSize, count, radius, fallSpeed, shimmyStrength, isSphereShape, affectedByLight);
 				if (isActive) SnowEffect.toggle();
 				System.out.println("Client received snow update");
 			});
