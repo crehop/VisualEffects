@@ -30,10 +30,12 @@ public class SnowEffect {
         SnowEffect.renderDistance = renderDistance;
         SnowEffect.affectedByLight = affectedByLight;
         SnowEffect.particleEffects = particleEffects;
+        System.out.println("Snow parameters updated ACTIVE?: " + (isActive ? "ON" : "OFF"));
     }
 
     public static void toggle() {
         isActive = !isActive;
+        System.out.println("Snow effect toggled: " + (isActive ? "ON" : "OFF"));
     }
 
     // Getters
@@ -50,4 +52,6 @@ public class SnowEffect {
     public static double getRenderDistance() { return renderDistance; }
     public static boolean isAffectedByLight() { return affectedByLight; }
     public static boolean hasParticleEffects() { return particleEffects; }
+    public static double getSnowflakeSize() { return maxSize; }
+
 }

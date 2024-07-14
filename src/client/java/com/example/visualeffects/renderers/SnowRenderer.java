@@ -70,8 +70,18 @@ public class SnowRenderer {
         }
     }
 
+    private static boolean debugPrinted = false;
+
     public static void render(MatrixStack matrices, float tickDelta, Vec3d cameraPos) {
         if (!SnowEffect.isActive()) return;
+
+        if (!debugPrinted) {
+            System.out.println("Snow rendering started. Parameters: " +
+                    "Count: " + SnowEffect.getCount() +
+                    ", Radius: " + SnowEffect.getRadius() +
+                    ", Size: " + SnowEffect.getSnowflakeSize());
+            debugPrinted = true;
+        }
 
         if (snowflakes == null || snowflakes.length != SnowEffect.getCount()) {
             initializeSnowflakes();

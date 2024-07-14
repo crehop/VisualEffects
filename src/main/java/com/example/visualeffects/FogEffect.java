@@ -24,10 +24,12 @@ public class FogEffect {
         FogEffect.swirlingStrength = swirlingStrength;
         FogEffect.layeringStrength = layeringStrength;
         FogEffect.affectsSnowVisibility = affectsSnowVisibility;
+        System.out.println("Fog parameters updated");
     }
 
     public static void toggle() {
         isActive = !isActive;
+        System.out.println("Fog effect toggled: " + (isActive ? "ON" : "OFF"));
     }
 
     // Getters
