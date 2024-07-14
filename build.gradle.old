@@ -1,0 +1,71 @@
+plugins {
+    id 'idea'
+    id 'maven-publish'
+    id 'org.jetbrains.kotlin.jvm' version '1.9.0'
+    id 'fabric-loom' version '1.6-SNAPSHOT'
+}
+
+def kotlinVersion = "1.9.0"
+def fabricKotlinVersion = "1.10.8+kotlin.1.9.0"
+
+version = project.property("mod_version")
+group = project.property("maven_group")
+
+base {
+    archivesName = project.property("archives_base_name")
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+    maven { url "https://maven.fabricmc.net/" }
+    maven { url "https://maven.parchmentmc.org" }
+    maven { url "https://cursemaven.com" }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.property("minecraft_version")}"
+    mappings loom.layered() {
+        officialMojangMappings()
+        parchment("org.parchmentmc.data:parchment-1.20.2:2023.10.08@zip")
+    }
+    modImplementation "net.fabricmc:fabric-language-kotlin:${fabricKotlinVersion}"
+    modImplementation "net.fabricmc:fabric-loader:${project.property("loader_version")}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}"
+    modImplementation "curse.maven:lodestone-616457:5498330"
+    modImplementation "curse.maven:porting-lib-696251:5273147"
+    modImplementation "curse.maven:cardinal-components-api-318449:4681153"
+
+    // Kotlin dependencies
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}"
+    implementation "org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}"
+    implementation "org.jetbrains.kotlin:kotlin-script-runtime:${kotlinVersion}"
+}
+
+tasks {
+    processResources {
+        inputs.property "version", project.version
+        filesMatching("fabric.mod.json") {
+            expand "version": project.version
+        }
+    }
+
+    jar {
+        from("LICENSE")
+    }
+}
+
+sourceSets {
+    main.kotlin.srcDirs += 'src/main/kotlin'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+    withSourcesJar()
+}
+
+kotlin {
+    jvmToolchain(17)
+}
