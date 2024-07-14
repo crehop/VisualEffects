@@ -1,5 +1,6 @@
 package com.example;
 
+import com.example.visualeffects.commands.SnowCommand;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import org.slf4j.Logger;

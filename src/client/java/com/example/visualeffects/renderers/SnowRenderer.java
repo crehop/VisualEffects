@@ -1,0 +1,129 @@
+package com.example.visualeffects.renderers;
+
+import com.example.visualeffects.SnowEffect;
+import com.example.visualeffects.WindEffect;
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.render.*;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Vec3d;
+import org.joml.Matrix4f;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.MinecraftClient;
+import java.util.Random;
+
+@Environment(EnvType.CLIENT)
+public class SnowRenderer {
+    private static final Identifier SNOW_TEXTURE = new Identifier("textures/environment/snow.png");
+    private static final Random RANDOM = new Random();
+    private static final int MAX_SNOWFLAKES = 10000;
+    private static Snowflake[] snowflakes;
+
+    private static class Snowflake {
+        double x, y, z;
+        double size;
+        double fallSpeed;
+
+        Snowflake(double radius, boolean isSphere) {
+            resetPosition(radius, isSphere);
+            this.size = RANDOM.nextDouble() * (SnowEffect.getMaxSize() - SnowEffect.getMinSize()) + SnowEffect.getMinSize();
+            this.fallSpeed = calculateFallSpeed(this.size);
+        }
+
+        void resetPosition(double radius, boolean isSphere) {
+            if (isSphere) {
+                double theta = RANDOM.nextDouble() * 2 * Math.PI;
+                double phi = Math.acos(2 * RANDOM.nextDouble() - 1);
+                this.x = radius * Math.sin(phi) * Math.cos(theta);
+                this.y = radius * Math.sin(phi) * Math.sin(theta);
+                this.z = radius * Math.cos(phi);
+            } else {
+                this.x = (RANDOM.nextDouble() - 0.5) * radius * 2;
+                this.y = RANDOM.nextDouble() * radius;
+                this.z = (RANDOM.nextDouble() - 0.5) * radius * 2;
+            }
+        }
+
+        void update(double deltaTime, double radius, boolean isSphere) {
+            y -= fallSpeed * SnowEffect.getFallSpeed() * deltaTime;
+
+            if (WindEffect.isActive()) {
+                double windStrength = WindEffect.getStrength();
+                double windDirection = WindEffect.getDirection();
+                x += Math.cos(windDirection) * windStrength * deltaTime;
+                z += Math.sin(windDirection) * windStrength * deltaTime;
+            }
+
+            if (y < -radius) {
+                resetPosition(radius, isSphere);
+            }
+
+            // Apply shimmy effect
+            double shimmy = Math.sin(y * 0.1) * SnowEffect.getShimmyStrength();
+            x += shimmy * deltaTime;
+        }
+
+        private double calculateFallSpeed(double size) {
+            // Larger snowflakes fall faster
+            return size / SnowEffect.getMaxSize() * SnowEffect.getFallSpeed();
+        }
+    }
+
+    public static void render(MatrixStack matrices, float tickDelta, Vec3d cameraPos) {
+        if (!SnowEffect.isActive()) return;
+
+        if (snowflakes == null || snowflakes.length != SnowEffect.getCount()) {
+            initializeSnowflakes();
+        }
+
+        RenderSystem.setShader(GameRenderer::getPositionTexColorProgram);
+        RenderSystem.setShaderTexture(0, SNOW_TEXTURE);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.depthMask(false);
+
+        BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
+        bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
+
+        for (Snowflake snowflake : snowflakes) {
+            snowflake.update(tickDelta, SnowEffect.getRadius(), SnowEffect.isSphereShape());
+            renderSnowflake(matrices, bufferBuilder, snowflake, cameraPos);
+        }
+
+        BufferRenderer.draw(bufferBuilder.end());
+
+        RenderSystem.depthMask(true);
+        RenderSystem.disableBlend();
+    }
+
+    private static void initializeSnowflakes() {
+        snowflakes = new Snowflake[SnowEffect.getCount()];
+        for (int i = 0; i < snowflakes.length; i++) {
+            snowflakes[i] = new Snowflake(SnowEffect.getRadius(), SnowEffect.isSphereShape());
+        }
+    }
+
+    private static void renderSnowflake(MatrixStack matrices, BufferBuilder bufferBuilder, Snowflake snowflake, Vec3d cameraPos) {
+        matrices.push();
+        matrices.translate(snowflake.x - cameraPos.x, snowflake.y - cameraPos.y, snowflake.z - cameraPos.z);
+
+        Matrix4f matrix = matrices.peek().getPositionMatrix();
+        float size = (float) snowflake.size / 2;
+
+        int light = getLightLevel(snowflake, cameraPos);
+        int alpha = SnowEffect.isAffectedByLight() ? light : 255;
+
+        bufferBuilder.vertex(matrix, -size, -size, 0).texture(0, 1).color(255, 255, 255, alpha).next();
+        bufferBuilder.vertex(matrix, size, -size, 0).texture(1, 1).color(255, 255, 255, alpha).next();
+        bufferBuilder.vertex(matrix, size, size, 0).texture(1, 0).color(255, 255, 255, alpha).next();
+        bufferBuilder.vertex(matrix, -size, size, 0).texture(0, 0).color(255, 255, 255, alpha).next();
+
+        matrices.pop();
+    }
+
+    private static int getLightLevel(Snowflake snowflake, Vec3d cameraPos) {
+        // This is a placeholder. You'll need to implement actual light level calculation based on the world.
+        return 15;
+    }
+}
