@@ -13,7 +13,7 @@ public class WindCommand {
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(literal("wind")
                 .then(literal("set")
-                        .then(argument("strength", DoubleArgumentType.doubleArg(0.0, 10.0))
+                        .then(argument("strength", DoubleArgumentType.doubleArg(0.0, 1000.0))
                                 .then(argument("direction", DoubleArgumentType.doubleArg(0.0, 360.0))
                                         .executes(context -> executeSet(context.getSource(),
                                                 DoubleArgumentType.getDouble(context, "strength"),

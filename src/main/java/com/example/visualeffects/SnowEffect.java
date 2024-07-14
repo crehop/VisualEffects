@@ -3,15 +3,15 @@ package com.example.visualeffects;
 public class SnowEffect {
     private static boolean isActive = false;
     private static double minSize = 0.1;
-    private static double maxSize = 0.5;
+    private static double maxSize = 0.1;
     private static int count = 1000;
-    private static double radius = 32.0;
-    private static double spinSpeed = 1.0;
-    private static double fallSpeed = 1.0;
+    private static double radius = 1000.0;
+    private static double spinSpeed = 0.0;
+    private static double fallSpeed = 0.02;
     private static double angleVariance = 15.0;
     private static double shimmyStrength = 0.1;
     private static boolean isSphereShape = false;
-    private static double renderDistance = 64.0;
+    private static double renderDistance = 1000.0;
     private static boolean affectedByLight = false;
     private static boolean particleEffects = false;
 
