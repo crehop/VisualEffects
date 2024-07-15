@@ -1,14 +1,14 @@
 package com.example.visualeffects;
 
 public class SnowEffect {
-    private static boolean isActive = true;
+    private static boolean isActive = false;
     private static double minSize = 0.1;
-    private static double maxSize = 1.0;
+    private static double maxSize = 0.5;
     private static int count = 1000;
-    private static double radius = 50.0;
-    private static double fallSpeed = 0.1;
+    private static double radius = 32.0;
+    private static double fallSpeed = 1.0;
     private static double shimmyStrength = 0.1;
-    private static boolean isSphereShape = true;
+    private static boolean isSphereShape = false;
     private static boolean affectedByLight = false;
 
     public static void setParameters(double minSize, double maxSize, int count, double radius,
@@ -29,7 +29,6 @@ public class SnowEffect {
         System.out.println("Snow effect toggled: " + (isActive ? "ON" : "OFF"));
     }
 
-    // Getters
     public static boolean isActive() { return isActive; }
     public static double getMinSize() { return minSize; }
     public static double getMaxSize() { return maxSize; }
@@ -39,4 +38,9 @@ public class SnowEffect {
     public static double getShimmyStrength() { return shimmyStrength; }
     public static boolean isSphereShape() { return isSphereShape; }
     public static boolean isAffectedByLight() { return affectedByLight; }
+
+    public static void setActive(boolean active) {
+        isActive = active;
+        System.out.println("Snow effect active state set to: " + active);
+    }
 }

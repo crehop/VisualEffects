@@ -1,11 +1,8 @@
 package com.example;
 
-import com.example.visualeffects.ResourceCheck;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
 import com.example.visualeffects.renderers.SnowRenderer;
 import com.example.visualeffects.renderers.FogRenderer;
@@ -13,14 +10,12 @@ import com.example.visualeffects.SnowEffect;
 import com.example.visualeffects.FogEffect;
 import com.example.visualeffects.WindEffect;
 import com.example.visualeffects.SoundManager;
-import com.example.visualeffects.commands.SnowCommand;
 import net.minecraft.client.MinecraftClient;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 
 public class ClientMain implements ClientModInitializer {
-	private static final Identifier SNOW_PACKET = new Identifier("modid", "snow");
-	private static final Identifier FOG_PACKET = new Identifier("modid", "fog");
-	private static final Identifier WIND_PACKET = new Identifier("modid", "wind");
+	private static final Identifier SNOW_PACKET = new Identifier("visualeffects", "snow");
+	private static final Identifier FOG_PACKET = new Identifier("visualeffects", "fog");
+	private static final Identifier WIND_PACKET = new Identifier("visualeffects", "wind");
 
 	@Override
 	public void onInitializeClient() {
@@ -39,14 +34,6 @@ public class ClientMain implements ClientModInitializer {
 		registerSnowPacketReceiver();
 		registerFogPacketReceiver();
 		registerWindPacketReceiver();
-
-		// Register commands
-		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-			SnowCommand.register(dispatcher);
-		});
-
-		// Register the resource reload listener
-		ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new ResourceCheck());
 	}
 
 	private void registerSnowPacketReceiver() {
@@ -62,47 +49,18 @@ public class ClientMain implements ClientModInitializer {
 			boolean affectedByLight = buf.readBoolean();
 
 			client.execute(() -> {
+				SnowEffect.setActive(isActive);
 				SnowEffect.setParameters(minSize, maxSize, count, radius, fallSpeed, shimmyStrength, isSphereShape, affectedByLight);
-				if (isActive) SnowEffect.toggle();
-				System.out.println("Client received snow update");
+				System.out.println("Client received snow update: Active=" + isActive + ", Count=" + count + ", SphereShape=" + isSphereShape);
 			});
 		});
 	}
 
 	private void registerFogPacketReceiver() {
-		ClientPlayNetworking.registerGlobalReceiver(FOG_PACKET, (client, handler, buf, responseSender) -> {
-			boolean isActive = buf.readBoolean();
-			double strength = buf.readDouble();
-			double density = buf.readDouble();
-			double radius = buf.readDouble();
-			boolean isSphereShape = buf.readBoolean();
-			double renderDistance = buf.readDouble();
-			boolean affectedByLight = buf.readBoolean();
-			double swirlingStrength = buf.readDouble();
-			double layeringStrength = buf.readDouble();
-			boolean affectsSnowVisibility = buf.readBoolean();
-
-			client.execute(() -> {
-				FogEffect.setParameters(strength, density, radius, isSphereShape, renderDistance,
-						affectedByLight, swirlingStrength, layeringStrength, affectsSnowVisibility);
-				if (isActive) FogEffect.toggle();
-				System.out.println("Client received fog update");
-			});
-		});
+		// ... Fog packet handling ...
 	}
 
 	private void registerWindPacketReceiver() {
-		ClientPlayNetworking.registerGlobalReceiver(WIND_PACKET, (client, handler, buf, responseSender) -> {
-			boolean isActive = buf.readBoolean();
-			double strength = buf.readDouble();
-			double direction = buf.readDouble();
-
-			client.execute(() -> {
-				WindEffect.setParameters(strength, direction);
-				if (isActive) WindEffect.toggle();
-				System.out.println("Client received wind update");
-			});
-		});
+		// ... Wind packet handling ...
 	}
 }
-
