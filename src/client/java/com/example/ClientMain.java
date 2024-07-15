@@ -1,8 +1,11 @@
 package com.example;
 
+import com.example.visualeffects.ResourceCheck;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
 import com.example.visualeffects.renderers.SnowRenderer;
 import com.example.visualeffects.renderers.FogRenderer;
@@ -10,7 +13,9 @@ import com.example.visualeffects.SnowEffect;
 import com.example.visualeffects.FogEffect;
 import com.example.visualeffects.WindEffect;
 import com.example.visualeffects.SoundManager;
+import com.example.visualeffects.commands.SnowCommand;
 import net.minecraft.client.MinecraftClient;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 
 public class ClientMain implements ClientModInitializer {
 	private static final Identifier SNOW_PACKET = new Identifier("modid", "snow");
@@ -34,6 +39,14 @@ public class ClientMain implements ClientModInitializer {
 		registerSnowPacketReceiver();
 		registerFogPacketReceiver();
 		registerWindPacketReceiver();
+
+		// Register commands
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			SnowCommand.register(dispatcher);
+		});
+
+		// Register the resource reload listener
+		ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new ResourceCheck());
 	}
 
 	private void registerSnowPacketReceiver() {
@@ -92,3 +105,4 @@ public class ClientMain implements ClientModInitializer {
 		});
 	}
 }
+

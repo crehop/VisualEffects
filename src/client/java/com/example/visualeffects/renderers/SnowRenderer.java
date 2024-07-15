@@ -3,22 +3,23 @@ package com.example.visualeffects.renderers;
 import com.example.visualeffects.SnowEffect;
 import com.example.visualeffects.WindEffect;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.player.PlayerEntity;
+
 import java.util.Random;
 
 @Environment(EnvType.CLIENT)
 public class SnowRenderer {
-    private static final Identifier SNOW_TEXTURE = new Identifier("modid", "textures/enviornment/snow.png");
+    private static final Identifier SNOW_TEXTURE = new Identifier("visualeffects", "textures/environment/snow.png");
     private static final Random RANDOM = new Random();
-    private static final int MAX_SNOWFLAKES = 10000;
     private static Snowflake[] snowflakes;
 
     private static class Snowflake {
@@ -90,6 +91,11 @@ public class SnowRenderer {
             initializeSnowflakes();
         }
 
+        // Ensure snowflakes update with current parameters
+        for (int i = 0; i < snowflakes.length; i++) {
+            snowflakes[i] = new Snowflake(SnowEffect.getRadius(), SnowEffect.isSphereShape());
+        }
+
         System.out.println("Setting shader and texture...");
         RenderSystem.setShader(GameRenderer::getPositionTexColorProgram);
         RenderSystem.setShaderTexture(0, SNOW_TEXTURE);
@@ -103,6 +109,9 @@ public class SnowRenderer {
         for (Snowflake snowflake : snowflakes) {
             snowflake.update(tickDelta, SnowEffect.getRadius(), SnowEffect.isSphereShape());
             renderSnowflake(matrices, bufferBuilder, snowflake, playerPos);
+
+            // Spawn regular Minecraft particles 1 block away from the snowflake
+            spawnDebugParticle(snowflake);
         }
 
         BufferRenderer.draw(bufferBuilder.end());
@@ -135,6 +144,14 @@ public class SnowRenderer {
         bufferBuilder.vertex(matrix, -size, size, 0).texture(0, 0).color(255, 255, 255, alpha).next();
 
         matrices.pop();
+    }
+
+    private static void spawnDebugParticle(Snowflake snowflake) {
+        MinecraftClient.getInstance().particleManager.addParticle(
+                ParticleTypes.HAPPY_VILLAGER,
+                snowflake.x + 1, snowflake.y + 1, snowflake.z + 1,
+                0.0, 0.0, 0.0
+        );
     }
 
     private static int getLightLevel(Snowflake snowflake, Vec3d playerPos) {

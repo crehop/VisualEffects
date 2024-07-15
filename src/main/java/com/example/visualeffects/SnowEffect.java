@@ -1,7 +1,7 @@
 package com.example.visualeffects;
 
 public class SnowEffect {
-    private static boolean isActive = false;
+    private static boolean isActive = true;
     private static double minSize = 0.1;
     private static double maxSize = 1.0;
     private static int count = 1000;
