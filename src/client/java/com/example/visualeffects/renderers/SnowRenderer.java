@@ -74,10 +74,11 @@ public class SnowRenderer {
 
     public static void render(MatrixStack matrices, float tickDelta) {
         if (!SnowEffect.isActive()) {
-            System.out.println("Snow effect is not active.");
+            System.out.println("Snow effect is not active, skipping render");
             return;
         }
 
+        System.out.println("Rendering snow: Count=" + SnowEffect.getCount() + ", Radius=" + SnowEffect.getRadius());
         PlayerEntity player = MinecraftClient.getInstance().player;
         if (player == null) {
             System.out.println("Player not found.");

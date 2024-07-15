@@ -5,9 +5,14 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.server.command.CommandManager;
+import net.minecraft.util.Identifier;
 
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
@@ -51,6 +56,23 @@ public class SnowCommand {
     private static int executeSet(ServerCommandSource source, double minSize, double maxSize, int count, double radius,
                                   double fallSpeed, double shimmyStrength, boolean isSphereShape, boolean affectedByLight) {
         SnowEffect.setParameters(minSize, maxSize, count, radius, fallSpeed, shimmyStrength, isSphereShape, affectedByLight);
+
+        // Send packet to all clients
+        PacketByteBuf buf = PacketByteBufs.create();
+        buf.writeBoolean(SnowEffect.isActive());
+        buf.writeDouble(minSize);
+        buf.writeDouble(maxSize);
+        buf.writeInt(count);
+        buf.writeDouble(radius);
+        buf.writeDouble(fallSpeed);
+        buf.writeDouble(shimmyStrength);
+        buf.writeBoolean(isSphereShape);
+        buf.writeBoolean(affectedByLight);
+
+        for (ServerPlayerEntity player : source.getServer().getPlayerManager().getPlayerList()) {
+            ServerPlayNetworking.send(player, new Identifier("visualeffects", "snow"), buf);
+        }
+
         source.sendFeedback(() -> Text.literal("Snow parameters updated"), false);
         return 1;
     }
