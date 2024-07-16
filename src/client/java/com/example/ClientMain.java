@@ -3,6 +3,7 @@ package com.example;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.util.Identifier;
 import com.example.render.SnowRenderer;
 
@@ -20,11 +21,18 @@ public class ClientMain implements ClientModInitializer {
 			float size = buf.readFloat();
 			int count = buf.readInt();
 			float radius = buf.readFloat();
-			int spinSpeed = buf.readInt();
+			float spinSpeed = buf.readFloat();
+			float fallSpeed = buf.readFloat();
+			float sizeVariation = buf.readFloat();
+			float driftSpeed = buf.readFloat();
 			client.execute(() -> {
-				SnowEffect.setSnowing(isSnowing, size, count, radius, spinSpeed);
-				System.out.println("Client received snow toggle: " + isSnowing + " (Size: " + size + ", Count: " + count + ", Radius: " + radius + ", Spin Speed: " + spinSpeed + ")");
+				SnowEffect.setSnowing(isSnowing, size, count, radius, spinSpeed, fallSpeed, sizeVariation, driftSpeed);
 			});
+		});
+
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+			SnowEffect.reset();
+			SnowRenderer.reset();
 		});
 	}
 }
