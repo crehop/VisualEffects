@@ -7,58 +7,43 @@ import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.BlockPos;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.joml.Quaternionf;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
 
 @Environment(EnvType.CLIENT)
 public class SnowRenderer {
     private static final Identifier SNOW_TEXTURE = new Identifier("modid", "textures/particle/snow.png");
-    private static boolean lastSnowState = false;
-    private static float lastSize = 0;
-    private static int lastCount = 0;
-    private static float lastRadius = 0;
-    private static int lastSpinSpeed = 0;
-    private static boolean textureLoaded = false;
-    private static boolean shaderLoaded = false;
+    private static final Random RANDOM = new Random();
+    private static final List<Snowflake> snowflakes = new ArrayList<>();
+    private static boolean initialized = false;
+
+    private static class Snowflake {
+        Vec3d position;
+        float size;
+        Vector3f spinAxis;
+        float spinSpeed;
+        float fallSpeed;
+        Quaternionf rotation;
+
+        Snowflake(Vec3d pos, float size, float spinSpeed, float fallSpeed) {
+            this.position = pos;
+            this.size = size;
+            this.spinAxis = new Vector3f(RANDOM.nextFloat() - 0.5f, RANDOM.nextFloat() - 0.5f, RANDOM.nextFloat() - 0.5f).normalize();
+            this.spinSpeed = spinSpeed;
+            this.fallSpeed = fallSpeed;
+            this.rotation = new Quaternionf().rotateAxis(RANDOM.nextFloat() * 360f, RANDOM.nextFloat(), RANDOM.nextFloat(), RANDOM.nextFloat());
+        }
+    }
 
     public static void render(MatrixStack matrices, float tickDelta) {
-        boolean currentSnowState = SnowEffect.isSnowing();
-        float currentSize = SnowEffect.getSnowflakeSize();
-        int currentCount = SnowEffect.getSnowflakeCount();
-        float currentRadius = SnowEffect.getSnowRadius();
-        int currentSpinSpeed = SnowEffect.getSpinSpeed();
-
-        // Check if snow state or parameters have changed
-        if (currentSnowState != lastSnowState ||
-                currentSize != lastSize ||
-                currentCount != lastCount ||
-                currentRadius != lastRadius ||
-                currentSpinSpeed != lastSpinSpeed) {
-
-            if (currentSnowState) {
-                System.out.println("Snow effect activated: Size: " + currentSize +
-                        ", Count: " + currentCount +
-                        ", Radius: " + currentRadius +
-                        ", Spin Speed: " + currentSpinSpeed);
-            } else {
-                System.out.println("Snow effect deactivated");
-            }
-
-            // Update last known state
-            lastSnowState = currentSnowState;
-            lastSize = currentSize;
-            lastCount = currentCount;
-            lastRadius = currentRadius;
-            lastSpinSpeed = currentSpinSpeed;
-
-            // Reset texture and shader load flags
-            textureLoaded = false;
-            shaderLoaded = false;
-        }
-
-        if (!currentSnowState) {
+        if (!SnowEffect.isSnowing()) {
             return;
         }
 
@@ -66,30 +51,11 @@ public class SnowRenderer {
         Camera camera = client.gameRenderer.getCamera();
         Vec3d cameraPos = camera.getPos();
 
-        // Check if texture is loaded
-        if (!textureLoaded) {
-            try {
-                client.getTextureManager().getTexture(SNOW_TEXTURE);
-                System.out.println("Snow texture loaded successfully");
-                textureLoaded = true;
-            } catch (Exception e) {
-                System.out.println("Failed to load snow texture: " + e.getMessage());
-                return;
-            }
+        if (!initialized || SnowEffect.hasChanged()) {
+            initializeSnowflakes(cameraPos);
         }
 
-        // Check if shader is loaded
-        if (!shaderLoaded) {
-            try {
-                RenderSystem.setShader(GameRenderer::getPositionTexColorProgram);
-                System.out.println("Snow shader loaded successfully");
-                shaderLoaded = true;
-            } catch (Exception e) {
-                System.out.println("Failed to load snow shader: " + e.getMessage());
-                return;
-            }
-        }
-
+        RenderSystem.setShader(GameRenderer::getPositionTexColorProgram);
         RenderSystem.setShaderTexture(0, SNOW_TEXTURE);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -101,29 +67,9 @@ public class SnowRenderer {
         BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
         bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
 
-        long gameTime = client.world.getTime();
-        float rotation = (gameTime % 360) * currentSpinSpeed / 10f;
-
-        for (int i = 0; i < currentCount; i++) {
-            double x = (Math.random() - 0.5) * currentRadius * 2;
-            double y = (Math.random() - 0.5) * currentRadius * 2;
-            double z = (Math.random() - 0.5) * currentRadius * 2;
-
-            x += cameraPos.x;
-            y += cameraPos.y;
-            z += cameraPos.z;
-
-            matrices.push();
-            matrices.translate(x, y, z);
-            matrices.multiply(new Quaternionf().rotateY(rotation));
-
-            Matrix4f matrix = matrices.peek().getPositionMatrix();
-            bufferBuilder.vertex(matrix, -currentSize, -currentSize, 0).texture(0, 1).color(255, 255, 255, 255).next();
-            bufferBuilder.vertex(matrix, currentSize, -currentSize, 0).texture(1, 1).color(255, 255, 255, 255).next();
-            bufferBuilder.vertex(matrix, currentSize, currentSize, 0).texture(1, 0).color(255, 255, 255, 255).next();
-            bufferBuilder.vertex(matrix, -currentSize, currentSize, 0).texture(0, 0).color(255, 255, 255, 255).next();
-
-            matrices.pop();
+        for (Snowflake snowflake : snowflakes) {
+            updateSnowflake(snowflake, cameraPos, tickDelta);
+            renderSnowflake(matrices, bufferBuilder, snowflake, cameraPos);
         }
 
         BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
@@ -133,7 +79,87 @@ public class SnowRenderer {
         RenderSystem.depthMask(true);
         RenderSystem.enableCull();
         RenderSystem.disableBlend();
+    }
 
-        System.out.println("Snow rendered successfully");
+    private static void initializeSnowflakes(Vec3d cameraPos) {
+        snowflakes.clear();
+        float radius = SnowEffect.getSnowRadius();
+        int count = SnowEffect.getSnowflakeCount();
+        float baseSize = SnowEffect.getSnowflakeSize();
+        float baseSpinSpeed = SnowEffect.getSpinSpeed();
+        float baseFallSpeed = SnowEffect.getFallSpeed();
+
+        for (int i = 0; i < count; i++) {
+            double angle = RANDOM.nextDouble() * Math.PI * 2;
+            double r = Math.sqrt(RANDOM.nextDouble()) * radius;
+            double x = cameraPos.x + Math.cos(angle) * r;
+            double z = cameraPos.z + Math.sin(angle) * r;
+            double y = cameraPos.y + RANDOM.nextDouble() * radius * 2 - radius;
+
+            float size = baseSize * (1 + (RANDOM.nextFloat() - 0.5f) * 0.3f); // ±15% variation
+            float spinSpeed = baseSpinSpeed * (1 + (RANDOM.nextFloat() - 0.5f) * 0.2f);
+            float fallSpeed = baseFallSpeed * (1 + (RANDOM.nextFloat() - 0.5f) * 0.2f);
+
+            snowflakes.add(new Snowflake(new Vec3d(x, y, z), size, spinSpeed, fallSpeed));
+        }
+
+        initialized = true;
+    }
+
+    private static void updateSnowflake(Snowflake snowflake, Vec3d cameraPos, float tickDelta) {
+        float fallAngle = SnowEffect.getFallAngle();
+        snowflake.position = snowflake.position.add(
+                Math.sin(Math.toRadians(fallAngle)) * snowflake.fallSpeed * tickDelta,
+                -snowflake.fallSpeed * tickDelta,
+                Math.cos(Math.toRadians(fallAngle)) * snowflake.fallSpeed * tickDelta
+        );
+
+        snowflake.rotation.rotateAxis(snowflake.spinSpeed * tickDelta, snowflake.spinAxis);
+
+        // Respawn if out of bounds or hitting a block
+        if (isOutOfBounds(snowflake.position, cameraPos) || isInsideBlock(snowflake.position)) {
+            respawnSnowflake(snowflake, cameraPos);
+        }
+    }
+
+    private static boolean isOutOfBounds(Vec3d position, Vec3d cameraPos) {
+        float radius = SnowEffect.getSnowRadius();
+        return position.distanceTo(cameraPos) > radius || position.y < cameraPos.y - radius;
+    }
+
+    private static boolean isInsideBlock(Vec3d position) {
+        BlockPos blockPos = new BlockPos((int)position.x, (int)position.y, (int)position.z);
+        return MinecraftClient.getInstance().world.getBlockState(blockPos).isOpaque();
+    }
+
+    private static void respawnSnowflake(Snowflake snowflake, Vec3d cameraPos) {
+        float radius = SnowEffect.getSnowRadius();
+        double angle = RANDOM.nextDouble() * Math.PI * 2;
+        double r = Math.sqrt(RANDOM.nextDouble()) * radius;
+        snowflake.position = new Vec3d(
+                cameraPos.x + Math.cos(angle) * r,
+                cameraPos.y + radius,
+                cameraPos.z + Math.sin(angle) * r
+        );
+    }
+
+    private static void renderSnowflake(MatrixStack matrices, BufferBuilder bufferBuilder, Snowflake snowflake, Vec3d cameraPos) {
+        matrices.push();
+        matrices.translate(
+                snowflake.position.x - cameraPos.x,
+                snowflake.position.y - cameraPos.y,
+                snowflake.position.z - cameraPos.z
+        );
+        matrices.multiply(snowflake.rotation);
+
+        Matrix4f matrix = matrices.peek().getPositionMatrix();
+        float halfSize = snowflake.size / 2;
+
+        bufferBuilder.vertex(matrix, -halfSize, -halfSize, 0).texture(0, 1).color(255, 255, 255, 255).next();
+        bufferBuilder.vertex(matrix, halfSize, -halfSize, 0).texture(1, 1).color(255, 255, 255, 255).next();
+        bufferBuilder.vertex(matrix, halfSize, halfSize, 0).texture(1, 0).color(255, 255, 255, 255).next();
+        bufferBuilder.vertex(matrix, -halfSize, halfSize, 0).texture(0, 0).color(255, 255, 255, 255).next();
+
+        matrices.pop();
     }
 }

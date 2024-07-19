@@ -13,41 +13,93 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
 
 public class SnowCommand {
-    private static final Identifier SNOW_TOGGLE_PACKET = new Identifier("modid", "snow_toggle");
+    private static final Identifier SNOW_UPDATE_PACKET = new Identifier("modid", "snow_update");
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(CommandManager.literal("snow")
                 .then(CommandManager.literal("toggle")
-                        .executes(context -> executeToggle(context.getSource(), 0.1f, 1000, 16f, 0)))
-                .then(CommandManager.literal("set")
+                        .executes(context -> executeToggle(context.getSource())))
+                .then(CommandManager.literal("size")
                         .then(CommandManager.argument("size", FloatArgumentType.floatArg(0.01f, 100f))
-                                .then(CommandManager.argument("count", IntegerArgumentType.integer(1, 1000000))
-                                        .then(CommandManager.argument("radius", FloatArgumentType.floatArg(1f, 100f))
-                                                .then(CommandManager.argument("spinSpeed", IntegerArgumentType.integer(0, 1000))
-                                                        .executes(context -> executeToggle(
-                                                                context.getSource(),
-                                                                FloatArgumentType.getFloat(context, "size"),
-                                                                IntegerArgumentType.getInteger(context, "count"),
-                                                                FloatArgumentType.getFloat(context, "radius"),
-                                                                IntegerArgumentType.getInteger(context, "spinSpeed")
-                                                        ))))))));
+                                .executes(context -> executeSetSize(context.getSource(), FloatArgumentType.getFloat(context, "size")))))
+                .then(CommandManager.literal("count")
+                        .then(CommandManager.argument("count", IntegerArgumentType.integer(1, 1000000))
+                                .executes(context -> executeSetCount(context.getSource(), IntegerArgumentType.getInteger(context, "count")))))
+                .then(CommandManager.literal("radius")
+                        .then(CommandManager.argument("radius", FloatArgumentType.floatArg(1f, 100f))
+                                .executes(context -> executeSetRadius(context.getSource(), FloatArgumentType.getFloat(context, "radius")))))
+                .then(CommandManager.literal("spin")
+                        .then(CommandManager.argument("speed", IntegerArgumentType.integer(0, 1000))
+                                .executes(context -> executeSetSpin(context.getSource(), IntegerArgumentType.getInteger(context, "speed")))))
+                .then(CommandManager.literal("fallspeed")
+                        .then(CommandManager.argument("speed", FloatArgumentType.floatArg(0f, 10f))
+                                .executes(context -> executeSetFallSpeed(context.getSource(), FloatArgumentType.getFloat(context, "speed")))))
+                .then(CommandManager.literal("angle")
+                        .then(CommandManager.argument("angle", FloatArgumentType.floatArg(-90f, 90f))
+                                .executes(context -> executeSetAngle(context.getSource(), FloatArgumentType.getFloat(context, "angle"))))));
     }
 
-    private static int executeToggle(ServerCommandSource source, float size, int count, float radius, int spinSpeed) {
-        boolean isSnowing = SnowEffect.toggleSnow(size, count, radius, spinSpeed);
-        System.out.println("Server: Snow effect toggled: " + isSnowing + " (Size: " + size + ", Count: " + count + ", Radius: " + radius + ", Spin Speed: " + spinSpeed + ")");
-
-        PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeBoolean(isSnowing);
-        buf.writeFloat(size);
-        buf.writeInt(count);
-        buf.writeFloat(radius);
-        buf.writeInt(spinSpeed);
-        for (ServerPlayerEntity player : source.getServer().getPlayerManager().getPlayerList()) {
-            ServerPlayNetworking.send(player, SNOW_TOGGLE_PACKET, buf);
-        }
-
-        source.sendFeedback(() -> Text.literal("Toggled snow effect (Size: " + size + ", Count: " + count + ", Radius: " + radius + ", Spin Speed: " + spinSpeed + ")"), false);
+    private static int executeToggle(ServerCommandSource source) {
+        boolean isSnowing = SnowEffect.toggleSnow();
+        sendUpdatePacket(source);
+        source.sendFeedback(() -> Text.literal(SnowEffect.getState()), true);
         return 1;
+    }
+
+    private static int executeSetSize(ServerCommandSource source, float size) {
+        SnowEffect.setSnowflakeSize(size);
+        sendUpdatePacket(source);
+        source.sendFeedback(() -> Text.literal(SnowEffect.getState()), true);
+        return 1;
+    }
+
+    private static int executeSetCount(ServerCommandSource source, int count) {
+        SnowEffect.setSnowflakeCount(count);
+        sendUpdatePacket(source);
+        source.sendFeedback(() -> Text.literal(SnowEffect.getState()), true);
+        return 1;
+    }
+
+    private static int executeSetRadius(ServerCommandSource source, float radius) {
+        SnowEffect.setSnowRadius(radius);
+        sendUpdatePacket(source);
+        source.sendFeedback(() -> Text.literal(SnowEffect.getState()), true);
+        return 1;
+    }
+
+    private static int executeSetSpin(ServerCommandSource source, int speed) {
+        SnowEffect.setSpinSpeed(speed);
+        sendUpdatePacket(source);
+        source.sendFeedback(() -> Text.literal(SnowEffect.getState()), true);
+        return 1;
+    }
+
+    private static int executeSetFallSpeed(ServerCommandSource source, float speed) {
+        SnowEffect.setFallSpeed(speed);
+        sendUpdatePacket(source);
+        source.sendFeedback(() -> Text.literal(SnowEffect.getState()), true);
+        return 1;
+    }
+
+    private static int executeSetAngle(ServerCommandSource source, float angle) {
+        SnowEffect.setFallAngle(angle);
+        sendUpdatePacket(source);
+        source.sendFeedback(() -> Text.literal(SnowEffect.getState()), true);
+        return 1;
+    }
+
+    private static void sendUpdatePacket(ServerCommandSource source) {
+        PacketByteBuf buf = PacketByteBufs.create();
+        buf.writeBoolean(SnowEffect.isSnowing());
+        buf.writeFloat(SnowEffect.getSnowflakeSize());
+        buf.writeInt(SnowEffect.getSnowflakeCount());
+        buf.writeFloat(SnowEffect.getSnowRadius());
+        buf.writeInt(SnowEffect.getSpinSpeed());
+        buf.writeFloat(SnowEffect.getFallSpeed());
+        buf.writeFloat(SnowEffect.getFallAngle());
+
+        for (ServerPlayerEntity player : source.getServer().getPlayerManager().getPlayerList()) {
+            ServerPlayNetworking.send(player, SNOW_UPDATE_PACKET, buf);
+        }
     }
 }
