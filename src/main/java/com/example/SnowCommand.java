@@ -29,8 +29,8 @@ public class SnowCommand {
                         .then(CommandManager.argument("radius", FloatArgumentType.floatArg(1f, 100f))
                                 .executes(context -> executeSetRadius(context.getSource(), FloatArgumentType.getFloat(context, "radius")))))
                 .then(CommandManager.literal("spin")
-                        .then(CommandManager.argument("speed", IntegerArgumentType.integer(0, 1000))
-                                .executes(context -> executeSetSpin(context.getSource(), IntegerArgumentType.getInteger(context, "speed")))))
+                        .then(CommandManager.argument("speed", FloatArgumentType.floatArg(0f, 10f))
+                                .executes(context -> executeSetSpin(context.getSource(), FloatArgumentType.getFloat(context, "speed")))))
                 .then(CommandManager.literal("fallspeed")
                         .then(CommandManager.argument("speed", FloatArgumentType.floatArg(0f, 10f))
                                 .executes(context -> executeSetFallSpeed(context.getSource(), FloatArgumentType.getFloat(context, "speed")))))
@@ -67,7 +67,7 @@ public class SnowCommand {
         return 1;
     }
 
-    private static int executeSetSpin(ServerCommandSource source, int speed) {
+    private static int executeSetSpin(ServerCommandSource source, float speed) {
         SnowEffect.setSpinSpeed(speed);
         sendUpdatePacket(source);
         source.sendFeedback(() -> Text.literal(SnowEffect.getState()), true);
@@ -94,7 +94,7 @@ public class SnowCommand {
         buf.writeFloat(SnowEffect.getSnowflakeSize());
         buf.writeInt(SnowEffect.getSnowflakeCount());
         buf.writeFloat(SnowEffect.getSnowRadius());
-        buf.writeInt(SnowEffect.getSpinSpeed());
+        buf.writeFloat(SnowEffect.getSpinSpeed());
         buf.writeFloat(SnowEffect.getFallSpeed());
         buf.writeFloat(SnowEffect.getFallAngle());
 

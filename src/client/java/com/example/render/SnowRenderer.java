@@ -6,8 +6,9 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Box;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Quaternionf;
@@ -55,6 +56,14 @@ public class SnowRenderer {
             initializeSnowflakes(cameraPos);
         }
 
+        // Update snowflakes and check bounds
+        for (Snowflake snowflake : snowflakes) {
+            updateSnowflake(snowflake, cameraPos, tickDelta);
+            if (isOutOfBounds(snowflake.position, cameraPos)) {
+                respawnSnowflake(snowflake, cameraPos);
+            }
+        }
+
         RenderSystem.setShader(GameRenderer::getPositionTexColorProgram);
         RenderSystem.setShaderTexture(0, SNOW_TEXTURE);
         RenderSystem.enableBlend();
@@ -68,8 +77,9 @@ public class SnowRenderer {
         bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
 
         for (Snowflake snowflake : snowflakes) {
-            updateSnowflake(snowflake, cameraPos, tickDelta);
-            renderSnowflake(matrices, bufferBuilder, snowflake, cameraPos);
+            if (isInFrustum(camera, snowflake.position, snowflake.size)) {
+                renderSnowflake(matrices, bufferBuilder, snowflake, cameraPos);
+            }
         }
 
         BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
@@ -81,9 +91,34 @@ public class SnowRenderer {
         RenderSystem.disableBlend();
     }
 
+    private static boolean isInFrustum(Camera camera, Vec3d position, float size) {
+        Vec3d cameraPos = camera.getPos();
+        Vector3f viewVector = camera.getHorizontalPlane();
+        Vec3d toSnowflake = position.subtract(cameraPos);
+
+        double dotProduct = toSnowflake.x * viewVector.x + toSnowflake.y * viewVector.y + toSnowflake.z * viewVector.z;
+        double distanceSq = toSnowflake.lengthSquared();
+
+        if (dotProduct < 0 && distanceSq > size * size) {
+            return false;
+        }
+
+        MinecraftClient client = MinecraftClient.getInstance();
+        double fov = Math.toRadians(client.options.getFov().getValue());
+        double aspectRatio = (double) client.getWindow().getWidth() / client.getWindow().getHeight();
+
+        double halfFovTanVertical = Math.tan(fov / 2) * 1.01; // Add 1% to vertical FOV
+        double halfFovTanHorizontal = halfFovTanVertical * aspectRatio * 1.01; // Adjust for aspect ratio and add 1%
+
+        double verticalRadius = Math.abs(toSnowflake.y / dotProduct);
+        double horizontalRadius = Math.sqrt(Math.pow(toSnowflake.x / dotProduct, 2) + Math.pow(toSnowflake.z / dotProduct, 2));
+
+        return verticalRadius <= halfFovTanVertical && horizontalRadius <= halfFovTanHorizontal;
+    }
+
     private static void initializeSnowflakes(Vec3d cameraPos) {
         snowflakes.clear();
-        float radius = SnowEffect.getSnowRadius();
+        float radius = SnowEffect.getSnowRadius(); // Increase initial spawn radius by 1%
         int count = SnowEffect.getSnowflakeCount();
         float baseSize = SnowEffect.getSnowflakeSize();
         float baseSpinSpeed = SnowEffect.getSpinSpeed();
@@ -107,24 +142,24 @@ public class SnowRenderer {
     }
 
     private static void updateSnowflake(Snowflake snowflake, Vec3d cameraPos, float tickDelta) {
-        float fallAngle = SnowEffect.getFallAngle();
+        float fallAngle = (float) Math.toRadians(SnowEffect.getFallAngle());
+        float horizontalSpeed = snowflake.fallSpeed * (float) Math.sin(fallAngle);
+        float verticalSpeed = snowflake.fallSpeed * (float) Math.cos(fallAngle);
+
         snowflake.position = snowflake.position.add(
-                Math.sin(Math.toRadians(fallAngle)) * snowflake.fallSpeed * tickDelta,
-                -snowflake.fallSpeed * tickDelta,
-                Math.cos(Math.toRadians(fallAngle)) * snowflake.fallSpeed * tickDelta
+                horizontalSpeed * tickDelta,
+                -verticalSpeed * tickDelta,
+                0
         );
 
         snowflake.rotation.rotateAxis(snowflake.spinSpeed * tickDelta, snowflake.spinAxis);
-
-        // Respawn if out of bounds or hitting a block
-        if (isOutOfBounds(snowflake.position, cameraPos) || isInsideBlock(snowflake.position)) {
-            respawnSnowflake(snowflake, cameraPos);
-        }
     }
 
     private static boolean isOutOfBounds(Vec3d position, Vec3d cameraPos) {
         float radius = SnowEffect.getSnowRadius();
-        return position.distanceTo(cameraPos) > radius || position.y < cameraPos.y - radius;
+        double dx = position.x - cameraPos.x;
+        double dz = position.z - cameraPos.z;
+        return Math.sqrt(dx*dx + dz*dz) > radius || position.y < cameraPos.y - radius;
     }
 
     private static boolean isInsideBlock(Vec3d position) {
@@ -133,14 +168,27 @@ public class SnowRenderer {
     }
 
     private static void respawnSnowflake(Snowflake snowflake, Vec3d cameraPos) {
-        float radius = SnowEffect.getSnowRadius();
+        float radius = SnowEffect.getSnowRadius() * 1.01f; // Increase spawn radius by 1%
         double angle = RANDOM.nextDouble() * Math.PI * 2;
         double r = Math.sqrt(RANDOM.nextDouble()) * radius;
-        snowflake.position = new Vec3d(
-                cameraPos.x + Math.cos(angle) * r,
-                cameraPos.y + radius,
-                cameraPos.z + Math.sin(angle) * r
-        );
+        double x = Math.cos(angle) * r;
+        double z = Math.sin(angle) * r;
+
+        // Determine if snowflake should spawn above or around
+        if (RANDOM.nextDouble() < 0.7) { // 70% chance to spawn above
+            snowflake.position = new Vec3d(
+                    cameraPos.x + x,
+                    cameraPos.y + radius,
+                    cameraPos.z + z
+            );
+        } else { // 30% chance to spawn around
+            double y = RANDOM.nextDouble() * radius * 2 - radius;
+            snowflake.position = new Vec3d(
+                    cameraPos.x + x,
+                    cameraPos.y + y,
+                    cameraPos.z + z
+            );
+        }
     }
 
     private static void renderSnowflake(MatrixStack matrices, BufferBuilder bufferBuilder, Snowflake snowflake, Vec3d cameraPos) {

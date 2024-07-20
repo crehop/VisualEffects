@@ -20,7 +20,7 @@ public class ClientMain implements ClientModInitializer {
 			float size = buf.readFloat();
 			int count = buf.readInt();
 			float radius = buf.readFloat();
-			int spinSpeed = buf.readInt();
+			float spinSpeed = buf.readFloat();
 			float fallSpeed = buf.readFloat();
 			float fallAngle = buf.readFloat();
 

@@ -5,7 +5,7 @@ public class SnowEffect {
     private static float snowflakeSize = 0.1f;
     private static int snowflakeCount = 1000;
     private static float snowRadius = 16f;
-    private static int spinSpeed = 1;
+    private static float spinSpeed = 0.1f;
     private static float fallSpeed = 0.1f;
     private static float fallAngle = 0f;
     private static boolean hasChanged = false;
@@ -14,6 +14,11 @@ public class SnowEffect {
         isSnowing = !isSnowing;
         hasChanged = true;
         return isSnowing;
+    }
+
+    public static void setSnowing(boolean snowing) {
+        isSnowing = snowing;
+        hasChanged = true;
     }
 
     public static void setSnowflakeSize(float size) {
@@ -31,7 +36,7 @@ public class SnowEffect {
         hasChanged = true;
     }
 
-    public static void setSpinSpeed(int speed) {
+    public static void setSpinSpeed(float speed) {
         spinSpeed = speed;
         hasChanged = true;
     }
@@ -62,7 +67,7 @@ public class SnowEffect {
         return snowRadius;
     }
 
-    public static int getSpinSpeed() {
+    public static float getSpinSpeed() {
         return spinSpeed;
     }
 
@@ -81,12 +86,9 @@ public class SnowEffect {
         }
         return false;
     }
-    public static void setSnowing(boolean snowing) {
-        isSnowing = snowing;
-        hasChanged = true;
-    }
+
     public static String getState() {
-        return String.format("Snow: %s, Size: %.2f, Count: %d, Radius: %.2f, Spin: %d, Fall Speed: %.2f, Angle: %.2f",
+        return String.format("Snow: %s, Size: %.2f, Count: %d, Radius: %.2f, Spin: %.2f, Fall Speed: %.2f, Angle: %.2f",
                 isSnowing, snowflakeSize, snowflakeCount, snowRadius, spinSpeed, fallSpeed, fallAngle);
     }
 }
