@@ -107,13 +107,21 @@ public class SnowRenderer {
         double fov = Math.toRadians(client.options.getFov().getValue());
         double aspectRatio = (double) client.getWindow().getWidth() / client.getWindow().getHeight();
 
-        double halfFovTanVertical = Math.tan(fov / 2) * 1.01; // Add 1% to vertical FOV
-        double halfFovTanHorizontal = halfFovTanVertical * aspectRatio * 1.01; // Adjust for aspect ratio and add 1%
+        double halfFovTanVertical = Math.tan(fov / 2);
+        double halfFovTanHorizontal = halfFovTanVertical * aspectRatio * 1.5; // Increase horizontal FOV by 50%
 
-        double verticalRadius = Math.abs(toSnowflake.y / dotProduct);
-        double horizontalRadius = Math.sqrt(Math.pow(toSnowflake.x / dotProduct, 2) + Math.pow(toSnowflake.z / dotProduct, 2));
+        // Project the snowflake onto the view plane
+        Vec3d projectedSnowflake = new Vec3d(
+                toSnowflake.x - viewVector.x * dotProduct,
+                toSnowflake.y - viewVector.y * dotProduct,
+                toSnowflake.z - viewVector.z * dotProduct
+        );
 
-        return verticalRadius <= halfFovTanVertical && horizontalRadius <= halfFovTanHorizontal;
+        double horizontalDistance = Math.sqrt(projectedSnowflake.x * projectedSnowflake.x + projectedSnowflake.z * projectedSnowflake.z);
+        double verticalDistance = Math.abs(projectedSnowflake.y);
+
+        // Check if the snowflake is within the rectangular frustum
+        return (horizontalDistance / dotProduct <= halfFovTanHorizontal) && (verticalDistance / dotProduct <= halfFovTanVertical);
     }
 
     private static void initializeSnowflakes(Vec3d cameraPos) {
