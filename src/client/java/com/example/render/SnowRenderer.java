@@ -166,8 +166,9 @@ public class SnowRenderer {
     private static boolean isOutOfBounds(Vec3d position, Vec3d cameraPos) {
         float radius = SnowEffect.getSnowRadius();
         double dx = position.x - cameraPos.x;
+        double dy = position.y - cameraPos.y;
         double dz = position.z - cameraPos.z;
-        return Math.sqrt(dx*dx + dz*dz) > radius || position.y < cameraPos.y - radius;
+        return Math.sqrt(dx*dx + dy*dy + dz*dz) > radius;
     }
 
     private static boolean isInsideBlock(Vec3d position) {
@@ -176,27 +177,18 @@ public class SnowRenderer {
     }
 
     private static void respawnSnowflake(Snowflake snowflake, Vec3d cameraPos) {
-        float radius = SnowEffect.getSnowRadius() * 1.01f; // Increase spawn radius by 1%
+        float radius = SnowEffect.getSnowRadius() * 1.01f;
         double angle = RANDOM.nextDouble() * Math.PI * 2;
         double r = Math.sqrt(RANDOM.nextDouble()) * radius;
         double x = Math.cos(angle) * r;
         double z = Math.sin(angle) * r;
+        double y = RANDOM.nextDouble() * radius * 2 - radius;
 
-        // Determine if snowflake should spawn above or around
-        if (RANDOM.nextDouble() < 0.7) { // 70% chance to spawn above
-            snowflake.position = new Vec3d(
-                    cameraPos.x + x,
-                    cameraPos.y + radius,
-                    cameraPos.z + z
-            );
-        } else { // 30% chance to spawn around
-            double y = RANDOM.nextDouble() * radius * 2 - radius;
-            snowflake.position = new Vec3d(
-                    cameraPos.x + x,
-                    cameraPos.y + y,
-                    cameraPos.z + z
-            );
-        }
+        snowflake.position = cameraPos.add(
+                x,
+                y,
+                z
+        );
     }
 
     private static void renderSnowflake(MatrixStack matrices, BufferBuilder bufferBuilder, Snowflake snowflake, Vec3d cameraPos) {
