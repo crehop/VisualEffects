@@ -8,11 +8,11 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.command.CommandRegistryAccess;
-import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,16 +48,13 @@ public class Main implements ModInitializer {
 		ServerPlayerEntity player = source.getPlayer();
 
 		if (player != null) {
-			// Generate a unique portal ID (you might want to implement a more sophisticated system)
 			String portalId = "portal_" + player.getUuid().toString();
+			BlockPos playerPos = player.getBlockPos();
+			int animationSpeed = 10; // Default value, you can make this configurable
 
-			// Create the PortalPacketS2C
-			PortalPacketS2C packet = new PortalPacketS2C(portalId);
+			PortalPacketS2C packet = new PortalPacketS2C(portalId, playerPos, animationSpeed);
+			ServerPlayNetworking.send(player, packet);
 
-			// Send the packet to the client
-			ServerPlayNetworking.send(player,packet);
-
-			// Inform the player
 			source.sendFeedback(() -> Text.literal("Portal opened!"), false);
 			return 1;
 		} else {
