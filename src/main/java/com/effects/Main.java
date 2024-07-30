@@ -26,6 +26,7 @@ public class Main implements ModInitializer {
 	public void onInitialize() {
 		LOGGER.info("Hello Fabric world!");
 		PayloadTypeRegistry.playS2C().register(PortalPacketS2C.ID, PortalPacketS2C.CODEC);
+
 		registerCommands();
 	}
 

@@ -11,6 +11,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class ClientMain implements ClientModInitializer {
 			MinecraftClient client = MinecraftClient.getInstance();
 			if (client.world == null || client.player == null) return;
 
-			MatrixStack matrixStack = context.matrixStack();
+            MatrixStack matrixStack = context.matrixStack();
 			VertexConsumerProvider vertexConsumers = context.consumers();
 			Camera camera = context.camera();
 

@@ -1,16 +1,22 @@
 package com.effects;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.InvalidHierarchicalFileException;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
+import net.minecraft.client.gl.ShaderProgram;
+import net.minecraft.resource.ResourceFactory;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 public class Portal {
     private static final Identifier PORTAL_TEXTURE = Identifier.of("effects", "textures/portal/portal_animation.png");
-    private static final Identifier TEST_TEXTURE = Identifier.of("minecraft", "textures/block/stone.png");
     private static final float PORTAL_WIDTH = 4f;
     private static final float PORTAL_HEIGHT = 4f;
     private static final int COLUMNS = 5;
@@ -21,13 +27,55 @@ public class Portal {
     private final long creationTime;
     private final int animationSpeed;
 
+    private static ShaderProgram portalShader;
+
     public Portal(BlockPos position, int animationSpeed) {
         this.position = position;
         this.creationTime = System.currentTimeMillis();
         this.animationSpeed = animationSpeed;
     }
 
+
+
+    public static void initShaders(ResourceFactory factory) throws IOException {
+        try {
+            if (portalShader == null) {
+                portalShader = new ShaderProgram(factory, "portal", VertexFormats.POSITION_TEXTURE_COLOR);
+                RenderSystem.assertOnRenderThread(); // Ensure this is running on the render thread
+                RenderSystem.setShader(() -> portalShader);
+                System.out.println("Portal shader loaded successfully with identifier: " + portalShader.getName());
+            } else {
+                return;
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println("Failed to load portal shader: File not found");
+            e.printStackTrace();
+        } catch (InvalidHierarchicalFileException e) {
+            System.out.println("Failed to load portal shader: Invalid file");
+            e.printStackTrace();
+        } catch (IOException e) {
+            System.out.println("Failed to load portal shader: IO error - " + e.getMessage());
+            e.printStackTrace();
+            throw e; // Re-throwing the exception to indicate failure
+        } catch (Exception e) {
+            System.out.println("Failed to load portal shader: Unexpected error - " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+
     public void render(MatrixStack matrixStack, VertexConsumerProvider vertexConsumers, Camera camera) {
+
+        if (portalShader == null) {
+            try {
+                Portal.initShaders(MinecraftClient.getInstance().getResourceManager());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            System.out.println("Portal shader is null!"); // Debug print
+            return;
+        }
+
         Vec3d cameraPos = camera.getPos();
         Vec3d portalPos = new Vec3d(position.getX() + 0.5, position.getY() + 1.5, position.getZ() + 0.5);
 
@@ -41,13 +89,13 @@ public class Portal {
         float minV = row * (1f / ROWS);
         float maxV = (row + 1) * (1f / ROWS);
 
-        RenderSystem.setShader(GameRenderer::getPositionTexProgram);
+        RenderSystem.setShader(() -> portalShader);
         RenderSystem.setShaderTexture(0, PORTAL_TEXTURE);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableCull();
         RenderSystem.enableDepthTest();
-        RenderSystem.depthMask(true);
+        RenderSystem.depthMask(false);
 
         matrixStack.push();
         matrixStack.translate(portalPos.x - cameraPos.x, portalPos.y - cameraPos.y, portalPos.z - cameraPos.z);
@@ -57,15 +105,16 @@ public class Portal {
         matrixStack.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotation(yaw));
 
         Matrix4f matrix = matrixStack.peek().getPositionMatrix();
-        BufferBuilder bufferBuilder = Tessellator.getInstance().begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE);
+
+        BufferBuilder bufferBuilder = Tessellator.getInstance().begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
 
         float halfWidth = PORTAL_WIDTH / 2;
         float halfHeight = PORTAL_HEIGHT / 2;
 
-        bufferBuilder.vertex(matrix, -halfWidth, -halfHeight, 0).texture(minU, maxV);
-        bufferBuilder.vertex(matrix, halfWidth, -halfHeight, 0).texture(maxU, maxV);
-        bufferBuilder.vertex(matrix, halfWidth, halfHeight, 0).texture(maxU, minV);
-        bufferBuilder.vertex(matrix, -halfWidth, halfHeight, 0).texture(minU, minV);
+        bufferBuilder.vertex(matrix, -halfWidth, -halfHeight, 0).texture(minU, maxV).color(1f, 1f, 1f, 1f);
+        bufferBuilder.vertex(matrix, halfWidth, -halfHeight, 0).texture(maxU, maxV).color(1f, 1f, 1f, 1f);
+        bufferBuilder.vertex(matrix, halfWidth, halfHeight, 0).texture(maxU, minV).color(1f, 1f, 1f, 1f);
+        bufferBuilder.vertex(matrix, -halfWidth, halfHeight, 0).texture(minU, minV).color(1f, 1f, 1f, 1f);
 
         BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
 
