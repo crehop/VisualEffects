@@ -1,25 +1,35 @@
 package com.effects;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import org.joml.Matrix4f;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.util.math.random.Random;
 
 public class Portal {
-    private static final Identifier PORTAL_TEXTURE = Identifier.of("effects", "textures/portal/portal_animation.png");
-    private static final Identifier TEST_TEXTURE = Identifier.of("minecraft", "textures/block/stone.png");
-    private static final float PORTAL_WIDTH = 4f;
-    private static final float PORTAL_HEIGHT = 4f;
+    private static final String TEXTURE_NAMESPACE = "effects";
+    private static final String TEXTURE_PATH = "textures/portal/portal_animation.png";
+    private static final float PORTAL_WIDTH = 14f;
+    private static final float PORTAL_HEIGHT = 10f;
     private static final int COLUMNS = 5;
-    private static final int ROWS = 6;
-    private static final int TOTAL_FRAMES = COLUMNS * (ROWS - 1) + 4; // Last row has only 4 items
+    private static final int ROWS = 12;
+    private static final int TOTAL_FRAMES = 60;
+
+    private static final int PORTAL_CENTER_EFFECT_COUNT = 5;
+    private static final float PORTAL_CENTER_EFFECT_RADIUS = 0.5f;
+    private static final int PORTAL_EMISSIVE_PARTICLES_RADIUS = 3;
+    private static final float PORTAL_EMISSIVE_PARTICLES_COUNT = 4f;
 
     private final BlockPos position;
-    private final long creationTime;
+    private long creationTime;
     private final int animationSpeed;
+
+    public enum ParticleDistribution {
+        UNIFORM,
+        GAUSSIAN
+    }
 
     public Portal(BlockPos position, int animationSpeed) {
         this.position = position;
@@ -29,51 +39,168 @@ public class Portal {
 
     public void render(MatrixStack matrixStack, VertexConsumerProvider vertexConsumers, Camera camera) {
         Vec3d cameraPos = camera.getPos();
-        Vec3d portalPos = new Vec3d(position.getX() + 0.5, position.getY() + 1.5, position.getZ() + 0.5);
+        Vec3d portalPos = new Vec3d(position.getX() + 0.5, position.getY() + 2, position.getZ() + 0.5);
 
-        long currentTime = System.currentTimeMillis();
-        int frame = (int) ((currentTime - creationTime) / (1000f / animationSpeed)) % TOTAL_FRAMES;
-        int col = frame % COLUMNS;
-        int row = frame / COLUMNS;
+//        AnimatedTextureRenderer.renderAnimatedElipse(
+//                matrixStack,
+//                TEXTURE_NAMESPACE,
+//                TEXTURE_PATH,
+//                portalPos,
+//                cameraPos,
+//                2,
+//                4,
+//                60,
+//                COLUMNS,
+//                ROWS,
+//                TOTAL_FRAMES,
+//                animationSpeed,
+//                creationTime,
+//                true
+//        );
+        //RENDER TORUS
+//        AnimatedTextureRenderer.renderAnimatedTorus(
+//                matrixStack,
+//                TEXTURE_NAMESPACE,
+//                TEXTURE_PATH,
+//                portalPos,
+//                cameraPos,
+//                PORTAL_WIDTH,
+//                PORTAL_WIDTH / 2,
+//                COLUMNS,
+//                ROWS,
+//                TOTAL_FRAMES,
+//                animationSpeed,
+//                creationTime
+//        );
+//        //RENDER CONE
+//        AnimatedTextureRenderer.renderAnimatedCone(
+//                matrixStack,
+//                TEXTURE_NAMESPACE,
+//                TEXTURE_PATH,
+//                portalPos,
+//                cameraPos,
+//                PORTAL_WIDTH,
+//                PORTAL_HEIGHT,
+//                COLUMNS,
+//                ROWS,
+//                TOTAL_FRAMES,
+//                animationSpeed,
+//                creationTime
+//        );
 
-        float minU = col * (1f / COLUMNS);
-        float maxU = (col + 1) * (1f / COLUMNS);
-        float minV = row * (1f / ROWS);
-        float maxV = (row + 1) * (1f / ROWS);
+        //RENDER PYRAMID
+//        AnimatedTextureRenderer.renderAnimatedPyramid(
+//                matrixStack,
+//                TEXTURE_NAMESPACE,
+//                TEXTURE_PATH,
+//                portalPos,
+//                cameraPos,
+//                PORTAL_WIDTH,
+//                PORTAL_WIDTH,
+//                PORTAL_HEIGHT,
+//                COLUMNS,
+//                ROWS,
+//                TOTAL_FRAMES,
+//                animationSpeed,
+//                creationTime
+//        );
 
-        RenderSystem.setShader(GameRenderer::getPositionTexProgram);
-        RenderSystem.setShaderTexture(0, PORTAL_TEXTURE);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableCull();
-        RenderSystem.enableDepthTest();
-        RenderSystem.depthMask(true);
+        //  Render SPHERE
+//        AnimatedTextureRenderer.renderAnimatedSphere(
+//                matrixStack,
+//                TEXTURE_NAMESPACE,
+//                TEXTURE_PATH,
+//                portalPos,
+//                cameraPos,
+//                PORTAL_WIDTH,
+//                COLUMNS,
+//                ROWS,
+//                TOTAL_FRAMES,
+//                animationSpeed,
+//                creationTime
+//        );
 
-        matrixStack.push();
-        matrixStack.translate(portalPos.x - cameraPos.x, portalPos.y - cameraPos.y, portalPos.z - cameraPos.z);
+        //         RENDER CUBE
+        AnimatedTextureRenderer.renderAnimatedCube(
+                matrixStack,
+                TEXTURE_NAMESPACE,
+                TEXTURE_PATH,
+                portalPos,
+                cameraPos,
+                1,
+                1,
+                1,
+                COLUMNS,
+                ROWS,
+                TOTAL_FRAMES,
+                animationSpeed,
+                creationTime,
+                true,
+                true,
+                30f,  // Total rotation around X-axis over the entire animation
+                10f // Total rotation around Y-axis over the entire animation
+        );
+        //RENDER PLANE
+//        AnimatedTextureRenderer.renderAnimatedPlane(
+//                matrixStack,
+//                TEXTURE_NAMESPACE,
+//                TEXTURE_PATH,
+//                portalPos,
+//                cameraPos,
+//                PORTAL_WIDTH,
+//                PORTAL_HEIGHT,
+//                COLUMNS,
+//                ROWS,
+//                TOTAL_FRAMES,
+//                animationSpeed,
+//                creationTime
+//        );
 
-        Vec3d lookVec = cameraPos.subtract(portalPos).normalize();
-        float yaw = (float) Math.atan2(-lookVec.x, -lookVec.z);
-        matrixStack.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotation(yaw));
+        // Spawn particles
+        spawnParticles(ParticleDistribution.UNIFORM);
+    }
 
-        Matrix4f matrix = matrixStack.peek().getPositionMatrix();
-        BufferBuilder bufferBuilder = Tessellator.getInstance().begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE);
+    private void spawnParticles(ParticleDistribution distribution) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.world == null) return;
 
-        float halfWidth = PORTAL_WIDTH / 2;
-        float halfHeight = PORTAL_HEIGHT / 2;
+        Vec3d center = new Vec3d(position.getX() + 0.5, position.getY() + 2, position.getZ() + 0.5);
+        Random random = client.world.random;
 
-        bufferBuilder.vertex(matrix, -halfWidth, -halfHeight, 0).texture(minU, maxV);
-        bufferBuilder.vertex(matrix, halfWidth, -halfHeight, 0).texture(maxU, maxV);
-        bufferBuilder.vertex(matrix, halfWidth, halfHeight, 0).texture(maxU, minV);
-        bufferBuilder.vertex(matrix, -halfWidth, halfHeight, 0).texture(minU, minV);
+        // Spawn squid ink particles
+        for (int i = 0; i < PORTAL_CENTER_EFFECT_COUNT; i++) {
+            double offsetX = getOffset(distribution, PORTAL_CENTER_EFFECT_RADIUS, random);
+            double offsetY = getOffset(distribution, PORTAL_CENTER_EFFECT_RADIUS, random);
+            double offsetZ = getOffset(distribution, PORTAL_CENTER_EFFECT_RADIUS, random);
+            client.world.addParticle(ParticleTypes.BUBBLE_POP,
+                    center.x + offsetX,
+                    center.y + offsetY,
+                    center.z + offsetZ,
+                    0, 0, 0);
+        }
 
-        BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
+        // Spawn witch spell particles in a sphere around the portal
+        for (int i = 0; i < PORTAL_EMISSIVE_PARTICLES_RADIUS; i++) {
+            double offsetX = getOffset(distribution, PORTAL_EMISSIVE_PARTICLES_COUNT, random);
+            double offsetY = getOffset(distribution, PORTAL_EMISSIVE_PARTICLES_COUNT, random);
+            double offsetZ = getOffset(distribution, PORTAL_EMISSIVE_PARTICLES_COUNT, random);
+            client.world.addParticle(ParticleTypes.PORTAL,
+                    center.x + offsetX,
+                    center.y + offsetY,
+                    center.z + offsetZ,
+                    0, 0, 0);
+        }
+    }
 
-        matrixStack.pop();
-
-        RenderSystem.disableBlend();
-        RenderSystem.enableCull();
-        RenderSystem.depthMask(true);
+    private double getOffset(ParticleDistribution distribution, float radius, Random random) {
+        switch (distribution) {
+            case UNIFORM:
+                return (random.nextDouble() - 0.5) * 2 * radius;
+            case GAUSSIAN:
+                return random.nextGaussian() * radius / 3; // 99.7% of values will be within 3 standard deviations
+            default:
+                return 0;
+        }
     }
 
     public long getCreationTime() {
