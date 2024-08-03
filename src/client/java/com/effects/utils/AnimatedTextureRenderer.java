@@ -1,10 +1,9 @@
-package com.effects;
+package com.effects.utils;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -24,7 +23,8 @@ public class AnimatedTextureRenderer {
             int rows,
             int totalFrames,
             int animationSpeed,
-            long creationTime
+            long creationTime,
+            boolean faceCamera
     ) {
         Identifier texture = Identifier.of(namespace, texturePath);
         long currentTime = System.currentTimeMillis();
@@ -53,9 +53,14 @@ public class AnimatedTextureRenderer {
         matrixStack.push();
         matrixStack.translate(position.x - cameraPos.x, position.y - cameraPos.y, position.z - cameraPos.z);
 
-        Vec3d lookVec = cameraPos.subtract(position).normalize();
-        float yaw = (float) Math.atan2(-lookVec.x, -lookVec.z);
-        matrixStack.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotation(yaw));
+        if (faceCamera) {
+            Vec3d lookVec = cameraPos.subtract(position).normalize();
+            float yaw = (float) Math.atan2(-lookVec.x, -lookVec.z);
+            matrixStack.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotation(yaw));
+        } else {
+            // If not facing the camera, rotate to be vertical
+            matrixStack.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_X.rotationDegrees(90));
+        }
 
         Matrix4f matrix = matrixStack.peek().getPositionMatrix();
         BufferBuilder bufferBuilder = Tessellator.getInstance().begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE);
@@ -76,8 +81,6 @@ public class AnimatedTextureRenderer {
         RenderSystem.enableCull();
         RenderSystem.depthMask(true);
     }
-
-
     public static void renderAnimatedCube(
             MatrixStack matrixStack,
             String namespace,
@@ -372,7 +375,6 @@ public class AnimatedTextureRenderer {
             Vec3d cameraPos,
             float radius,
             float height,
-
             int columns,
             int rows,
             int totalFrames,

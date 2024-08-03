@@ -1,5 +1,6 @@
 package com.effects;
 
+import com.effects.utils.AnimatedTextureRenderer;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
@@ -140,6 +141,7 @@ public class Portal {
                 30f,  // Total rotation around X-axis over the entire animation
                 10f // Total rotation around Y-axis over the entire animation
         );
+
         //RENDER PLANE
 //        AnimatedTextureRenderer.renderAnimatedPlane(
 //                matrixStack,
@@ -157,7 +159,6 @@ public class Portal {
 //        );
 
         // Spawn particles
-        spawnParticles(ParticleDistribution.UNIFORM);
     }
 
     private void spawnParticles(ParticleDistribution distribution) {
